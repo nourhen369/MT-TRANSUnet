@@ -1,0 +1,11 @@
+# virtual environment
+segmentation-classification-keras
+
+# saved models
+models
+
+# python
+__pycache__
+
+# ui
+ui/node_modules
