@@ -28,8 +28,11 @@ async def predict(image: UploadFile = File(...)):
         cls_label = postprocess_classification(cls_pred)
 
         return JSONResponse({
-            "masks": seg_mask,
-            "classification": cls_label,
+            "masks": seg_mask.tolist() if hasattr(seg_mask, "tolist") else seg_mask,
+            "classification": (
+                cls_label.tolist() if hasattr(cls_label, "tolist") else cls_label
+            ),
         })
     except Exception as e:
+        print("Prediction error:", e) 
         return JSONResponse({"error": str(e)}, status_code=500)

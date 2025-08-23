@@ -2,7 +2,7 @@
 segmentation-classification-keras
 
 # saved models
-models
+model/*.keras
 
 # python
 __pycache__
