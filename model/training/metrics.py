@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from model.configs.train import SMOOTH
+SMOOTH = 1e-15
 
 
 def iou_multiclass(y_true, y_pred):

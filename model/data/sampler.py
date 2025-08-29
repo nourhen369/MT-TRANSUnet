@@ -1,5 +1,5 @@
 import random
-from collections import defaultdict, Counter
+from collections import defaultdict
 from typing import List, Tuple
 
 
@@ -42,6 +42,6 @@ def undersample_majority_class(
     undersampled_y3 = [y3[i] for i in undersampled_indices]
     undersampled_labels = [labels[i] for i in undersampled_indices]
 
-    print(f"[INFO] Undersampled dataset → {len(undersampled_labels)} samples "
+    print(f"[INFO] Undersampled dataset -> {len(undersampled_labels)} samples "
           f"(pos={sum(undersampled_labels)}, neg={len(undersampled_labels)-sum(undersampled_labels)})")
     return undersampled_x, undersampled_y1, undersampled_y2, undersampled_y3, undersampled_labels

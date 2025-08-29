@@ -135,7 +135,7 @@ The dataset pipeline:
 ## How to Run Trainer
 
 ```bash
-# Change configs/paths.py with your actual dataset paths
+# Change config.yaml witj your actual dataset paths
 # Create your virtual environment
 python -m venv myenv
 
@@ -146,4 +146,11 @@ myenv\Scripts\activate
 pip install -r .\requirements.txt
 
 # Run trainer
-python -m model.training.trainer
+python -m model.train
+```
+---
+
+## How to read TensorBoard logs
+
+```bash
+tensorboard --logdir=model/logs/TensorBoard

@@ -1,9 +1,34 @@
-import os, re, cv2
+import os, re, cv2, yaml, logging
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-from model.configs.train import SIZE
-from model.configs.paths import MASTERLIST_PATH
+from datetime import datetime
+
+
+with open("model/config.yaml") as f:
+    config = yaml.safe_load(f)
+
+MASTERLIST_PATH = config["paths"]["masterlist_path"]
+SIZE = config["hyperparams"]["size"]
+LOGS_DIR = config["logs"]["dataset_logs"]
+
+# Configure logging
+os.makedirs(LOGS_DIR, exist_ok=True)
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+log_file = os.path.join(LOGS_DIR, f"dataset_{timestamp}.log")
+logger = logging.getLogger("dataset")
+logger.setLevel(logging.DEBUG) 
+
+# File handler
+file_handler = logging.FileHandler(log_file)
+file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(file_formatter)
+logger.addHandler(console_handler)
 
 
 def read_image_tf(path: bytes) -> np.ndarray:
@@ -23,7 +48,7 @@ def read_image_tf(path: bytes) -> np.ndarray:
         x = x / 255.0
         return x.astype(np.float32)
     except Exception as e:
-        print(f"[ERROR] read_image_tf failed for {path}: {e}")
+        logger.error(f"read_image_tf failed for {path}: {e}")
         return np.zeros((SIZE, SIZE, 3), dtype=np.float32)
 
 
@@ -47,7 +72,7 @@ def read_mask_tf(path: bytes) -> np.ndarray:
         y = np.expand_dims(y, axis=-1)
         return y
     except Exception as e:
-        print(f"[ERROR] read_mask_tf failed for {path}: {e}")
+        logger.error(f"read_mask_tf failed for {path}: {e}")
         return np.zeros((SIZE, SIZE, 1), dtype=np.float32)
 
 
@@ -62,7 +87,7 @@ def read_multiclass_mask_tf(te_path: bytes, zp_path: bytes, icm_path: bytes) -> 
         mask = np.concatenate([te, zp, icm], axis=-1)
         return mask
     except Exception as e:
-        print(f"[ERROR] read_multiclass_mask_tf failed: {e}")
+        logger.error(f"read_multiclass_mask_tf failed: {e}")
         return np.zeros((SIZE, SIZE, 3), dtype=np.float32)
 
 
@@ -104,10 +129,10 @@ def tf_dataset_multi_with_cls(x_paths, te_paths, zp_paths, icm_paths, cls_labels
         dataset = dataset.map(tf_parse_multi_with_cls, num_parallel_calls=tf.data.AUTOTUNE)
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(tf.data.AUTOTUNE)
-        print(f"[INFO] Dataset built with {len(x_paths)} samples, batch size {batch_size}")
+        logger.info(f"Dataset built with {len(x_paths)} samples, batch size {batch_size}")
         return dataset
     except Exception as e:
-        print(f"[ERROR] Failed to build dataset: {e}")
+        logger.error(f"Failed to build dataset: {e}")
         return tf.data.Dataset.from_tensor_slices(())
 
 
@@ -128,10 +153,10 @@ def get_image_to_outcome() -> dict:
 
         df = df[df['Outcome'] != 2]  # filter out outcome == 2
         mapping = dict(zip(df['File Name'], df['Outcome']))
-        print(f"[INFO] Loaded {len(mapping)} image→outcome mappings")
+        logger.info(f"Loaded {len(mapping)} image->outcome mappings")
         return mapping
     except Exception as e:
-        print(f"[ERROR] Failed to read masterlist: {e}")
+        logger.error(f"Failed to read masterlist: {e}")
         return {}
 
 
@@ -148,11 +173,11 @@ def get_outcome_from_path(path: str, image_to_outcome: dict):
         base_key = re.sub(r'_\d+$', '', base_fname)  # strip augmentation suffix
         outcome = image_to_outcome.get(base_key, None)
         if outcome is None or pd.isna(outcome):
-            print(f"[WARN] Outcome missing for {base_fname}")
+            logger.warning(f"Outcome missing for {base_fname}")
             return None
         return outcome
     except Exception as e:
-        print(f"[ERROR] Failed to extract outcome from {path}: {e}")
+        logger.error(f"Failed to extract outcome from {path}: {e}")
         return None
 
 
@@ -173,7 +198,7 @@ def filter_dataset_by_outcome(images, y1, y2, y3):
         raise ValueError("Excel file missing required columns: 'Outcome' or 'File Name'")
     df = df[df['Outcome'] != 2]  # filter out outcome == 2
     image_to_outcome = dict(zip(df['File Name'], df['Outcome']))
-    print(f"[INFO] Loaded {len(image_to_outcome)} image→outcome mappings")
+    logger.info(f"Loaded {len(image_to_outcome)} image->outcome mappings")
 
     filtered_x, filtered_y1, filtered_y2, filtered_y3, filtered_labels = [], [], [], [], []
     skipped = 0
@@ -189,5 +214,5 @@ def filter_dataset_by_outcome(images, y1, y2, y3):
         else:
             skipped += 1
 
-    print(f"[INFO] Filtered dataset: {len(filtered_x)} valid samples, {skipped} skipped")
+    logger.info(f"Filtered dataset: {len(filtered_x)} valid samples, {skipped} skipped")
     return filtered_x, filtered_y1, filtered_y2, filtered_y3, filtered_labels

@@ -2,7 +2,10 @@
 myenv
 
 # saved models
-model/*.keras
+model/outputs/*.keras
+
+# logs
+model/logs
 
 # python
 __pycache__

@@ -1,0 +1,35 @@
+# Hyperparameters
+hyperparams:
+  model_name: "v1"
+  batch_size: 8
+  n_splits: 5
+  seed: 42
+  epochs: 200
+  learning_rate: 0.0001
+  loss_weights:
+    segmentation: 1.0
+    classification: 2.5
+  size: 256
+
+# Paths
+paths:
+  train_images: "G:/My_Drive/train/images"
+  train_te_masks: "G:/My_Drive/train/GT_TE"
+  train_zp_masks: "G:/My_Drive/train/GT_ZP"
+  train_icm_masks: "G:/My_Drive/train/GT_ICM"
+
+  val_images: "G:/My_Drive/valid/images"
+  val_te_masks: "G:/My_Drive/valid/GT_TE"
+  val_zp_masks: "G:/My_Drive/valid/GT_ZP"
+  val_icm_masks: "G:/My_Drive/valid/GT_ICM"
+
+  test_images: "G:/My_Drive/test/images"
+  test_te_masks: "G:/My_Drive/test/GT_TE"
+  test_zp_masks: "G:/My_Drive/test/GT_ZP"
+  test_icm_masks: "G:/My_Drive/test/GT_ICM"
+
+  masterlist_path: "G:/My_Drive/MasterlistAug30-2017.xlsx"
+  models_dir: "model/outputs"
+logs: 
+  dataset_logs: "model/logs/dataset"
+  training_logs: "model/logs/TensorBoard"

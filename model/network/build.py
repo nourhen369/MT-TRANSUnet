@@ -1,10 +1,16 @@
+import yaml
 import tensorflow as tf
 from tensorflow.keras import layers, Model
 
 from model.network.tranformer import *
 from model.network.cls_head import classification_head_combined
-from model.configs.train import INPUT_SHAPE
 
+
+with open("model/config.yaml") as f:
+    config = yaml.safe_load(f)
+
+SIZE = config["hyperparams"]["size"]
+INPUT_SHAPE = (SIZE, SIZE, 3)
 
 def build_transunet(return_attention=False):
     inputs = tf.keras.Input(INPUT_SHAPE)

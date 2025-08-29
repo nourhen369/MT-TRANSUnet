@@ -3,28 +3,23 @@ import pandas as pd
 import tensorflow as tf
 from collections import Counter
 from sklearn.model_selection import KFold
-from glob import glob
+import yaml, os
 
-from model.data.dataset import tf_dataset_multi_with_cls, filter_dataset_by_outcome, SIZE
+from model.data.dataset import tf_dataset_multi_with_cls, filter_dataset_by_outcome
 from model.data.sampler import undersample_majority_class
 from model.network.build import build_transunet
 from model.training.metrics import dice_coef_multiclass, iou_multiclass, dice_loss
 from model.training.callbacks import *
-from model.configs.paths import MODELS_DIR
 
+
+with open("model/config.yaml") as f:
+    config = yaml.safe_load(f)
+
+MODELS_DIR = config["paths"]["models_dir"]
+hp = config["hyperparams"]
 
 class Trainer:
     def __init__(self, train_paths, valid_paths, batch_size=8, n_splits=5, seed=42, model_name="v1"):
-        """
-        Trainer for multi-task TRANSU-Net (segmentation + classification).
-
-        Args:
-            train_paths (dict): Paths to training images and masks.
-            valid_paths (dict): Paths to validation images and masks.
-            batch_size (int): Batch size for training.
-            n_splits (int): Number of folds for K-Fold CV.
-            seed (int): Random seed for reproducibility.
-        """
         self.train_paths = train_paths
         self.valid_paths = valid_paths
         self.batch_size = batch_size
@@ -93,7 +88,7 @@ class Trainer:
                     "segmentation": dice_loss,
                     "classification": tf.keras.losses.BinaryCrossentropy(from_logits=False)
                 },
-                loss_weights={"segmentation": 1.0, "classification": 2.5},
+                loss_weights={"segmentation": hp["loss_weights"]["segmentation"], "classification": hp["loss_weights"]["classification"]},
                 metrics={
                     "segmentation": [dice_coef_multiclass, iou_multiclass],
                     "classification": [
@@ -105,7 +100,7 @@ class Trainer:
                 }
             )
 
-            callbacks = [reduce_lr, early_stop]
+            callbacks = [reduce_lr, early_stop, tensorboard_cb]
 
             history = model.fit(
                 train_ds_fold,
@@ -142,31 +137,3 @@ class Trainer:
         print("\n=== K-Fold Cross-Validation Results ===")
         print("Mean:", val_scores.mean(axis=0))
         print("Std:", val_scores.std(axis=0))
-
-
-if __name__ == "__main__":
-    import os
-    from glob import glob
-    from model.configs.paths import (
-        TRAIN_IMAGES, TRAIN_TE_MASKS, TRAIN_ZP_MASKS, TRAIN_ICM_MASKS,
-        VAL_IMAGES, VAL_TE_MASKS, VAL_ZP_MASKS, VAL_ICM_MASKS
-    )
-
-    train_paths = {
-        'x': sorted(glob(os.path.join(TRAIN_IMAGES, "*.bmp"))),
-        'y1': sorted(glob(os.path.join(TRAIN_TE_MASKS, "*.bmp"))),
-        'y2': sorted(glob(os.path.join(TRAIN_ZP_MASKS, "*.bmp"))),
-        'y3': sorted(glob(os.path.join(TRAIN_ICM_MASKS, "*.bmp"))),
-    }
-
-    valid_paths = {
-        'x': sorted(glob(os.path.join(VAL_IMAGES, "*.bmp"))),
-        'y1': sorted(glob(os.path.join(VAL_TE_MASKS, "*.bmp"))),
-        'y2': sorted(glob(os.path.join(VAL_ZP_MASKS, "*.bmp"))),
-        'y3': sorted(glob(os.path.join(VAL_ICM_MASKS, "*.bmp"))),
-    }
-
-    # Initialize and run trainer
-    trainer = Trainer(train_paths, valid_paths, batch_size=8, n_splits=5)
-    trainer.prepare_data()
-    trainer.run_kfold(epochs=200)

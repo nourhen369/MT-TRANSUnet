@@ -6,3 +6,4 @@ fastapi
 dotenv
 scikit-learn
 openpyxl
+pyyaml
