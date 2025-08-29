@@ -1,5 +1,5 @@
 # virtual environment
-segmentation-classification-keras
+myenv
 
 # saved models
 model/*.keras
